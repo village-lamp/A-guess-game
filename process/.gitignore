@@ -1,0 +1,58 @@
+# Python Bytecode Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+/venv/
+/env/
+/.venv/
+/.env/
+
+# IDE or Editor Folders
+.idea/
+.vscode/
+
+# Operating System Files
+.DS_Store      # macOS 系统文件
+Thumbs.db      # Windows 缩略图缓存文件
+
+# Logs
+*.log
+
+# Django
+*.sqlite3
+/db.sqlite3
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Distribution / Packaging
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Test Coverage
+.coverage
+nosetests.xml
+coverage.xml
+*.cover
+
+# Python Packaging
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest
+.cache/
+
+# mypy
+.mypy_cache/
+
+# pytype
+.pytype/
+
+# Python 3.7+
+*.pyo
