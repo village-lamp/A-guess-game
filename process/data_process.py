@@ -30,7 +30,9 @@ def process(input_file, output_file):
 
         for row_index in range(1, sheet.nrows):
             data_ = {}
-            for label in labels:
+            labels_ = [{"prop": "pic_url", "type": ""}]
+            labels_.extend(labels)
+            for label in labels_:
                 idx = headers[label['prop']]
                 if label['type'] == 'normal_list':
                     value = get_cell_str(sheet, row_index, idx)
@@ -45,7 +47,7 @@ def process(input_file, output_file):
             f.write('export const columns = ' + json.dumps(labels, ensure_ascii=False, indent=4) + ';\n')
             f.write('export const mainData = ' + json.dumps(data, ensure_ascii=False) + ';\n')
             f.write('export const prop2label = ' + json.dumps(prop2label, ensure_ascii=False) + ';\n')
-            f.write('export const maxStep = 1;')
+            f.write('export const maxStep = 10;')
 
     read_labels()
     read_data()
@@ -56,7 +58,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file', type=str, help='the input file of label and data')
-    parser.add_argument('output_file', default='./data.js', type=str, help='the output file')
+    parser.add_argument('--output_file', default='./data.js', type=str, help='the output file')
 
     process(parser.parse_args().input_file, parser.parse_args().output_file)
 
