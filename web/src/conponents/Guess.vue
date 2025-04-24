@@ -1,17 +1,25 @@
 <template>
-  <div style="padding: 20px; display: flex; justify-content: center; align-items: center; margin-top: 20px;">
-    <span style="margin-right: 10px; font-size: 16px; font-weight: bold">猜测次数：{{step}} / {{maxStep}}</span>
-    <el-autocomplete
-        v-model="searchInput"
-        :fetch-suggestions="querySearch"
-        :trigger-on-focus="false"
-        clearable
-        placeholder="请输入精灵名称"
-        style="width: 300px; margin-right: 10px"
-    />
-    <el-button type="primary" @click="inputValue" :disabled="isInputDisable">确认</el-button>
-    <el-button class="my-green-button" type="primary" @click="restart">重新开始</el-button>
-  </div>
+  <div>
+    <div style="position: relative; padding: 20px;">
+      <div style="position: absolute; left: 0; top: 10%; transform: translateY(-50%);">
+        <el-button style="background-color: grey; color: white; font-size: 20px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2)"
+                   :icon="ArrowLeft" @click="goBack" />
+      </div>
+      <div style="padding: 20px; display: flex; justify-content: center; align-items: center; margin-top: 20px;">
+        <span style="margin-right: 10px; font-size: 16px; font-weight: bold">猜测次数：{{step}} / {{maxStep}}</span>
+        <el-autocomplete
+            v-model="searchInput"
+            :fetch-suggestions="querySearch"
+            :trigger-on-focus="false"
+            clearable
+            :placeholder="placeholder"
+            style="width: 300px; margin-right: 10px"
+        />
+        <el-button type="primary" @click="inputValue" :disabled="isInputDisable">确认</el-button>
+        <el-button class="my-green-button" type="primary" @click="restart">重新开始</el-button>
+        <el-button class="my-red-button" type="primary" @click="getAnswer">揭晓答案</el-button>
+      </div>
+    </div>
 
   <el-dialog
       v-model="overDialogVisible"
@@ -22,8 +30,9 @@
       <img :src="goal.pic_url" style="width: 180px; height: auto; margin-right: 20px;" alt=""/>
 
       <div>
-        <span v-if="gameSuccess">猜对了！</span>
-        <span v-else>猜错了！正确答案是：</span>
+        <span v-if="gameSuccess === 'success'">猜对了！您使用了{{step}}次猜中！</span>
+        <span v-else-if="gameSuccess === 'fail'">猜错了！正确答案是：</span>
+        <span v-else>正确答案是：</span>
         <div v-for="(value, key) in filterGoal(goal)" :key="key" style="margin-bottom: 4px;">
           <span style="font-weight: bold;">{{ prop2label[key] }}:</span>
           <span style="margin-left: 6px;">
@@ -86,12 +95,23 @@
       </template>
     </el-table-column>
   </el-table>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { mainData, columns, maxStep, prop2label } from './data.js';
+import {ref, onMounted} from 'vue';
 import {ElMessage} from "element-plus";
+import router from "../../router/index.js";
+import {useRoute} from "vue-router";
+import { ArrowLeft } from "@element-plus/icons-vue"
+
+const modules = import.meta.glob("../datas/*.js")
+
+let mainData = []
+let columns = []
+let maxStep = 0
+let prop2label = []
+let placeholder = ""
 
 const overDialogVisible = ref();
 const gameSuccess = ref();
@@ -105,20 +125,50 @@ const restart = () => {
   start();
 }
 
+const goBack = () => {
+  router.push('/');
+}
+
+const getAnswer = () => {
+  isInputDisable.value = true
+  overDialogVisible.value = true
+}
+
 const filterGoal = (goal) => {
   return Object.fromEntries(
       Object.entries(goal).filter(([key, value]) => key !== "pic_url" && value != null && value !== "")
   );
 }
 
+const route = useRoute()
+
+const loadData = async () => {
+  console.log("加载数据中")
+  try {
+    const module = await modules[`../datas/${route.params.type}.js`]();
+    mainData = module.mainData;
+    columns = module.columns;
+    maxStep = module.maxStep;
+    prop2label = module.prop2label;
+    placeholder = module.placeholder;
+    restaurants.value = mainData;
+
+    start();
+  } catch(err) {
+    console.error(`加载${route.params.type}数据失败:`, err);
+    await router.push('/');
+  }
+}
+
 const start = () => {
+  console.log("开始游戏")
   goal = mainData[Math.floor(Math.random() * mainData.length)];
   console.log(goal);
   resultList.value = [];
   step = 0;
   isInputDisable.value = false;
   overDialogVisible.value = false;
-  gameSuccess.value = false;
+  gameSuccess.value = "";
 }
 
 const restructureData = (item) => {
@@ -165,12 +215,12 @@ const inputValue = () => {
   step++;
   if (searchInput.value === goal.value) {
     console.log(searchInput.value)
-    gameSuccess.value = true;
+    gameSuccess.value = "success";
     overDialogVisible.value = true;
     isInputDisable.value = true;
   } else {
     if (step >= maxStep) {
-      gameSuccess.value = false;
+      gameSuccess.value = "fail";
       overDialogVisible.value = true;
       isInputDisable.value = true;
     }
@@ -195,12 +245,12 @@ const querySearch = (queryString, cb) => {
             return indexA - indexB;
           })
       : restaurants.value;
+
   cb(results);
 };
 
 onMounted(() => {
-  restaurants.value = mainData
-  start();
+  loadData();
 })
 </script>
 
@@ -238,5 +288,15 @@ onMounted(() => {
 
 .my-green-button:hover {
   background-color: #228B22;
+}
+
+.my-red-button {
+  background-color: #c10606;
+  color: white;
+  border: none;
+}
+
+.my-red-button:hover {
+  background-color: #d30707;
 }
 </style>

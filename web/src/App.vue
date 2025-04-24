@@ -1,11 +1,5 @@
-<script setup>
-
-</script>
-
 <template>
-  $END$
+  <div id="app">
+    <router-view />
+  </div>
 </template>
-
-<style scoped>
-
-</style>
