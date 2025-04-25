@@ -27,7 +27,7 @@
       width="500"
   >
     <div style="display: flex; align-items: flex-start;">
-      <img :src="goal.pic_url" style="width: 180px; height: auto; margin-right: 20px;" alt=""/>
+      <img :src="goal.pic_url" style="width: 180px; height: auto; margin-right: 20px;" alt="" v-if="hasPic"/>
 
       <div>
         <span v-if="gameSuccess === 'success'">猜对了！您使用了{{step}}次猜中！</span>
