@@ -3,45 +3,19 @@ import re
 
 import xlrd
 import xlwt
-import time
 
-import requests
 
 from bs4 import BeautifulSoup
 
+from fetch_util import fetch_or_read
 from util import get_seh_attribute, get_seh_gender, get_seh_total_ability
 
 
-def fetch_or_read(url, fetch_path):
-    if os.path.exists(fetch_path):
-        print("reading " + fetch_path)
-        with open(fetch_path, "r", encoding='utf-8') as f:
-            html = f.read()
-    # else:
-    #     print("fetching " + fetch_path)
-    #     requests.packages.urllib3.disable_warnings()
-    #     response = requests.get(url)
-    #     response.encoding = response.apparent_encoding
-    #     html = response.text
-    #     if response.status_code == 200:
-    #         with open(fetch_path, "w", encoding='utf-8') as f:
-    #             f.write(html)
-    #     else:
-    #         print("fail")
-    #     time.sleep(10)
-    return html
-
-
-def fetch_or_read_main():
-    url = "http://www.4399.com/flash/seer.htm"
-    html = fetch_or_read(url, fetch_path="./htmls/main_page.html")
-    return html
-
-
-def fetch_or_read_sprite(url):
+def fetch_or_read_block(block_name):
+    url = "https://zh.minecraft.wiki/w/"
     number = url.removesuffix('.htm').split('/')[-1]
     url = "http:" + url
-    html = fetch_or_read(url, fetch_path=f"./htmls/sprite_{number}.html")
+    html = fetch_or_read(url, f"./htmls/sprite_{number}.html", 1)
     return html
 
 

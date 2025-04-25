@@ -15,9 +15,9 @@
             :placeholder="placeholder"
             style="width: 300px; margin-right: 10px"
         />
-        <el-button type="primary" @click="inputValue" :disabled="isInputDisable">确认</el-button>
+        <el-button type="primary" @click="inputValue" :disabled="isGameOver">确认</el-button>
         <el-button class="my-green-button" type="primary" @click="restart">重新开始</el-button>
-        <el-button class="my-red-button" type="primary" @click="getAnswer">揭晓答案</el-button>
+        <el-button class="my-red-button" type="primary" :disabled="isGameOver" @click="getAnswer">揭晓答案</el-button>
       </div>
     </div>
 
@@ -55,10 +55,11 @@
       :data="resultList"
       style="margin-top: 20px; width: 100%; height: 100%; overflow: auto;"
       :empty-text="''"
+      :row-class-name="tableRowClassName"
   >
-    <el-table-column prop="pic_url" label="">
+    <el-table-column prop="pic_url" label="" v-if="hasPic">
       <template v-slot="scope">
-        <img :src="scope.row['pic_url'].value" style="width: 100px; height: 100px;"/>
+        <img :src="scope.row['pic_url'].value" style="width: 100px; height: 100px;" alt=""/>
       </template>
     </el-table-column>
     <el-table-column
@@ -112,14 +113,24 @@ let columns = []
 let maxStep = 0
 let prop2label = []
 let placeholder = ""
+let hasPic = true
 
 const overDialogVisible = ref();
 const gameSuccess = ref();
-const isInputDisable = ref();
+const isGameOver = ref();
 const searchInput = ref('');
 const resultList = ref([]);
 let goal;
 let step;
+
+const tableRowClassName = ({ row }) => {
+  if (row.correct === 'correct') {
+    return 'row-success';
+  } else if (row.correct === 'fail') {
+    return 'row-fail';
+  }
+  return 'row-normal';
+}
 
 const restart = () => {
   start();
@@ -130,8 +141,9 @@ const goBack = () => {
 }
 
 const getAnswer = () => {
-  isInputDisable.value = true
-  overDialogVisible.value = true
+  isGameOver.value = true;
+  overDialogVisible.value = true;
+  insertGoal2Table();
 }
 
 const filterGoal = (goal) => {
@@ -150,6 +162,7 @@ const loadData = async () => {
     columns = module.columns;
     maxStep = module.maxStep;
     prop2label = module.prop2label;
+    hasPic = module.hasPic;
     placeholder = module.placeholder;
     restaurants.value = mainData;
 
@@ -166,13 +179,16 @@ const start = () => {
   console.log(goal);
   resultList.value = [];
   step = 0;
-  isInputDisable.value = false;
+  isGameOver.value = false;
   overDialogVisible.value = false;
   gameSuccess.value = "";
 }
 
 const restructureData = (item) => {
   const result = {};
+  if (item.value === goal.value) {
+    result["correct"] = "correct";
+  }
   result["pic_url"] = {"value": item.pic_url};
   for (const column of columns) {
     const key = column.prop;
@@ -198,31 +214,84 @@ const restructureData = (item) => {
     } else if (column.type === "normal") {
       column_result.value = item[key];
       column_result.correct = item[key] === goal[key] ? 'correct' : 'false';
+    } else if (column.type === "groups") {
+      column_result.value = item[key];
+      column_result.correct = analyseGroup(item[key], goal[key], column.near);
+    } else if (column.type === "groups_list") {
+      column_result.value = item[key];
+      const correct = [];
+      for (const itemA of item[key]) {
+        let cur_correct = 'false';
+        for (const itemB of goal[key]) {
+          const res = analyseGroup(itemA, itemB, column.near)
+          if (res === 'correct') {
+            cur_correct = res;
+            break;
+          } else if (res === 'near') {
+            cur_correct = res;
+          }
+        }
+        correct.push(cur_correct);
+      }
+      column_result.correct = correct;
+    }
+
+    if (column.type.includes('list')) {
+      if (item[key].length > goal[key].length) {
+        column_result.value.push('↓')
+      } else if (item[key].length < goal[key].length) {
+        column_result.value.push('↑')
+      }
     }
     result[key] = column_result;
   }
-  console.log(result);
   return result;
+}
+
+const analyseGroup = (itemA, itemB, near) => {
+  if (itemA === itemB) {
+    return 'correct';
+  } else {
+    for (const group of near) {
+      if (Array.isArray(group)) {
+        if (group.includes(itemA) && group.includes(itemB)) {
+          return 'near';
+        }
+      } else {
+        const regex = new RegExp(group);
+        if (regex.test(itemA) && regex.test(itemB)) {
+          return 'near';
+        }
+      }
+    }
+  }
+  return 'false';
+}
+
+const insertGoal2Table = () => {
+  const item = restructureData(goal);
+  item['correct'] = 'fail'
+  resultList.value.unshift(item);
 }
 
 const inputValue = () => {
   const item = restructureData(mainData.find(d => d.value === searchInput.value));
   if (item) {
-    resultList.value.push(item);
+    resultList.value.unshift(item);
   } else {
     ElMessage.error('未找到该精灵');
   }
   step++;
   if (searchInput.value === goal.value) {
-    console.log(searchInput.value)
     gameSuccess.value = "success";
     overDialogVisible.value = true;
-    isInputDisable.value = true;
+    isGameOver.value = true;
   } else {
     if (step >= maxStep) {
       gameSuccess.value = "fail";
       overDialogVisible.value = true;
-      isInputDisable.value = true;
+      isGameOver.value = true;
+      insertGoal2Table();
     }
   }
   searchInput.value = "";
@@ -296,7 +365,29 @@ onMounted(() => {
   border: none;
 }
 
+.my-red-button:disabled {
+  background-color: rgba(193, 6, 6, 0.65);
+  color: white;
+  border: none;
+}
+
 .my-red-button:hover {
   background-color: #d30707;
+}
+
+.my-red-button:disabled:hover {
+  background-color: rgba(193, 6, 6, 0.65);
+}
+
+.row-normal {
+  background-color: #f0f9eb;
+}
+
+.row-success {
+  background-color: rgba(157, 246, 157, 0.63) !important;
+}
+
+.row-fail {
+  background-color: rgba(241, 123, 123, 0.45) !important;
 }
 </style>

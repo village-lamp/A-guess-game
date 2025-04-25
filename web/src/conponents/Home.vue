@@ -1,6 +1,6 @@
 <template>
   <div style="padding: 40px; max-width: 1200px; margin: 0 auto">
-    <h1 style="text-align: center; margin-bottom: 30px;">请选择一个项目游玩</h1>
+    <h1 style="text-align: center; margin-bottom: 30px;">请选择一个题库游玩</h1>
 
     <div class="image-grid">
       <div
@@ -58,5 +58,6 @@ const goTo = (type) => {
   height: 100px;
   object-fit: cover;
   border-radius: 16px;
+  border: 1px solid black;
 }
 </style>

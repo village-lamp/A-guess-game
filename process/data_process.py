@@ -7,6 +7,7 @@ from util import get_cell_str
 def process(input_file, output_file):
     labels = []
     data = []
+    config = {}
     prop2label = {}
     book = xlrd2.open_workbook(input_file)
     title = ['label', 'prop', 'type', 'near']
@@ -17,6 +18,19 @@ def process(input_file, output_file):
             label = {}
             for (idx, col_name) in enumerate(title):
                 label[col_name] = get_cell_str(sheet, row_index, idx)
+
+            if label['type'].find('groups') != -1:
+                near = []
+                idx = 3
+                while idx < sheet.ncols and get_cell_str(sheet, row_index, idx) != "":
+                    temp = get_cell_str(sheet, row_index, idx)
+                    temp = temp.split(',')
+                    if len(temp) == 1:
+                        near.append(temp[0])
+                    else:
+                        near.append(temp)
+                    idx += 1
+                label['near'] = near
             labels.append(label)
 
     def read_data():
@@ -28,27 +42,45 @@ def process(input_file, output_file):
         prop2label = {prop: name for (prop, name) in zip(headers, prop2label)}
         headers = {header: idx for idx, header in enumerate(headers)}
 
-        for row_index in range(1, sheet.nrows):
+        for row_index in range(2, sheet.nrows):
             data_ = {}
-            labels_ = [{"prop": "pic_url", "type": ""}]
+            if config['hasPic'] == 'true':
+                labels_ = [{"prop": "pic_url", "type": ""}]
+            else:
+                labels_ = []
             labels_.extend(labels)
             for label in labels_:
                 idx = headers[label['prop']]
-                if label['type'] == 'normal_list':
+                if label['type'].find('list') != -1:
                     value = get_cell_str(sheet, row_index, idx)
-                    value = value.split(',')
-                    data_[label['prop']] = value
+                    if value == '':
+                        data_[label['prop']] = []
+                    else:
+                        value = value.split(',')
+                        data_[label['prop']] = value
                 else:
                     data_[label['prop']] = get_cell_str(sheet, row_index, idx)
             data.append(data_)
+
+    def read_config():
+        sheet = book.sheet_by_name('config')
+        config['maxStep'] = 10
+        config['hasPic'] = "true"
+        headers = sheet.row_values(0)
+        for idx, header in enumerate(headers):
+            config[header] = get_cell_str(sheet, 1, idx)
 
     def write_to_file():
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write('export const columns = ' + json.dumps(labels, ensure_ascii=False, indent=4) + ';\n')
             f.write('export const mainData = ' + json.dumps(data, ensure_ascii=False) + ';\n')
             f.write('export const prop2label = ' + json.dumps(prop2label, ensure_ascii=False) + ';\n')
-            f.write('export const maxStep = 10;')
 
+            for config_ in config:
+                value = config[config_]
+                f.write(f'export const {config_} = {value};\n')
+
+    read_config()
     read_labels()
     read_data()
     write_to_file()
