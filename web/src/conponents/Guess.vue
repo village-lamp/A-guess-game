@@ -237,6 +237,7 @@ const restructureData = (item) => {
     }
 
     if (column.type.includes('list')) {
+      column_result.value = column_result.value.slice();
       if (item[key].length > goal[key].length) {
         column_result.value.push('↓')
       } else if (item[key].length < goal[key].length) {

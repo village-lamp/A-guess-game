@@ -57,7 +57,7 @@ const goTo = (type) => {
   width: 100px;
   height: 100px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 22px;
   border: 1px solid black;
 }
 </style>
