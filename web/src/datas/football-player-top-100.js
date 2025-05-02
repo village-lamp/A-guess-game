@@ -66,4 +66,7 @@ export const prop2label = {"value": "球员名字", "position": "位置", "age":
 export const maxStep = 10;
 export const hasPic = false;
 export const placeholder = "请输入球员名字";
-export const rule = ""
+export const rule = "";
+
+import DataProcessor from "../script/dataProcessor.js";
+export class MyDataProcessor extends DataProcessor {}

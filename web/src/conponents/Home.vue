@@ -50,7 +50,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { games } from '../games.js'
+import { games } from '../datas/games.js'
 import { marked } from 'marked'
 import {onMounted, ref} from "vue";
 

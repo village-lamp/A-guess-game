@@ -143,3 +143,6 @@ export const maxStep = 10;
 export const hasPic = true;
 export const placeholder = "请输入自然方块";
 export const rule = "";
+
+import DataProcessor from "../script/dataProcessor.js";
+export class MyDataProcessor extends DataProcessor {}

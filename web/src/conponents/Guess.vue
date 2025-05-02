@@ -81,7 +81,7 @@
       :empty-text="''"
       :row-class-name="tableRowClassName"
   >
-    <el-table-column prop="pic_url" label="" v-if="hasPic">
+    <el-table-column prop="pic_url" label="" v-if="hasPic" align="center">
       <template v-slot="scope">
         <img :src="scope.row['pic_url'].value" style="width: 100px; height: 100px;" alt=""/>
       </template>
@@ -91,6 +91,7 @@
       :key="col.prop"
       :label="col.label"
       :prop="col.prop"
+      align="center"
     >
       <template v-slot="scope">
         <template v-if="col.type === 'key'">
@@ -150,6 +151,7 @@ const resultList = ref([]);
 const showAboutDialog = ref(false);
 const activeTab = ref('rule');
 const renderedRule = ref('');
+let dataProcessor;
 let goal;
 let step;
 
@@ -190,12 +192,12 @@ const loadData = async () => {
     const module = await modules[`../datas/${route.params.type}.js`]();
     mainData = module.mainData;
     columns = module.columns;
+    dataProcessor = new module.MyDataProcessor(mainData, columns);
     maxStep = module.maxStep;
     prop2label = module.prop2label;
     hasPic = module.hasPic;
     placeholder = module.placeholder;
     renderedRule.value = marked.parse(module.rule);
-    restaurants.value = mainData;
 
     start();
   } catch(err) {
@@ -206,7 +208,8 @@ const loadData = async () => {
 
 const start = () => {
   console.log("开始游戏")
-  goal = mainData[Math.floor(Math.random() * mainData.length)];
+  console.log(dataProcessor)
+  goal = dataProcessor._selectGoal();
   console.log(goal);
   resultList.value = [];
   step = 0;
@@ -218,114 +221,20 @@ const start = () => {
   searchInput.value = '';
 }
 
-const restructureData = (item) => {
-  const result = {};
-  if (item.value === goal.value) {
-    result["correct"] = "correct";
-  }
-  result["pic_url"] = {"value": item.pic_url};
-  for (const column of columns) {
-    const key = column.prop;
-    const column_result = {};
-    if (column.type === "normal_list") {
-      column_result.value = item[key];
-      const correct = [];
-      for (const i of item[key]) {
-        correct.push(goal[key].includes(i) ? 'correct' : 'false');
-      }
-      column_result.correct = correct;
-    } else if (column.type === "key" || column.type === "pic") {
-      column_result.value = item[key];
-    } else if (column.type === "num_order") {
-      const regex = new RegExp(column.pattern);
-      const target = parseInt(goal[key].match(regex)[1]);
-      const current = parseInt(item[key].match(regex)[1]);
-      const appendix = target > current ? '↑':
-          target < current ? '↓': '';
-      column_result.value = item[key] + appendix;
-      column_result.correct = target === current ? 'correct'
-          : Math.abs(target - current) <= parseInt(column.near) ? 'near'
-              : 'false';
-    } else if (column.type === "num") {
-      const target = parseInt(goal[key]);
-      const current = parseInt(item[key]);
-      const appendix = target > current ? '↑':
-          target < current ? '↓': '';
-      column_result.value = item[key] + appendix;
-      column_result.correct = target === current ? 'correct'
-          : Math.abs(target - current) <= parseInt(column.near) ? 'near'
-          : 'false';
-    } else if (column.type === "normal") {
-      column_result.value = item[key];
-      column_result.correct = item[key] === goal[key] ? 'correct' : 'false';
-    } else if (column.type === "groups") {
-      column_result.value = item[key];
-      column_result.correct = analyseGroup(item[key], goal[key], column.near);
-    } else if (column.type === "groups_list") {
-      column_result.value = item[key];
-      const correct = [];
-      for (const itemA of item[key]) {
-        let cur_correct = 'false';
-        for (const itemB of goal[key]) {
-          const res = analyseGroup(itemA, itemB, column.near)
-          if (res === 'correct') {
-            cur_correct = res;
-            break;
-          } else if (res === 'near') {
-            cur_correct = res;
-          }
-        }
-        correct.push(cur_correct);
-      }
-      column_result.correct = correct;
-    }
-
-    if (column.type.includes('list')) {
-      column_result.value = column_result.value.slice();
-      if (item[key].length > goal[key].length) {
-        column_result.value.push('↓')
-      } else if (item[key].length < goal[key].length) {
-        column_result.value.push('↑')
-      }
-    }
-    result[key] = column_result;
-  }
-  return result;
-}
-
-const analyseGroup = (itemA, itemB, near) => {
-  if (itemA === itemB) {
-    return 'correct';
-  } else {
-    for (const group of near) {
-      if (Array.isArray(group)) {
-        if (group.includes(itemA) && group.includes(itemB)) {
-          return 'near';
-        }
-      } else {
-        const regex = new RegExp(group);
-        if (regex.test(itemA) && regex.test(itemB)) {
-          return 'near';
-        }
-      }
-    }
-  }
-  return 'false';
-}
 
 const insertGoal2Table = () => {
-  const item = restructureData(goal);
+  const item = dataProcessor.restructureData(goal);
   item['correct'] = 'fail'
   resultList.value.unshift(item);
 }
 
 const inputValue = () => {
-  let item = mainData.find(d => d.value === searchInput.value);
+  let item = dataProcessor.input2Labels(searchInput.value);
   if (!item) {
     ElMessage.error('未找到');
     return;
   }
-  item = restructureData(item);
+  item = dataProcessor.restructureData(item);
   resultList.value.unshift(item);
   step++;
   if (searchInput.value === goal.value) {
@@ -343,25 +252,8 @@ const inputValue = () => {
   searchInput.value = "";
 };
 
-const restaurants = ref([]);
-
-const createFilter = (queryString) => {
-  return (restaurant) => {
-    return restaurant.value.toLowerCase().includes(queryString.toLowerCase());
-  };
-};
-
 const querySearch = (queryString, cb) => {
-  const results = queryString
-      ? restaurants.value.filter(createFilter(queryString))
-          .sort((a, b) => {
-            const indexA = a.value.toLowerCase().indexOf(queryString.toLowerCase());
-            const indexB = b.value.toLowerCase().indexOf(queryString.toLowerCase());
-            return indexA - indexB;
-          })
-      : restaurants.value;
-
-  cb(results);
+  cb(dataProcessor.autoComplete(queryString));
 };
 
 onMounted(() => {
