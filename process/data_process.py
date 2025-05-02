@@ -1,15 +1,25 @@
+import os
+
 import xlrd2
 import json
 
 from util import get_cell_str
 
 
-def process(input_file, output_file):
+def process(input_path, name, output_file):
     labels = []
     data = []
     config = {}
     prop2label = {}
-    book = xlrd2.open_workbook(input_file)
+    metadata = {'title': '', 'pic_url': '', 'description': '', 'prop': ''}
+    data_processor = 'export class MyDataProcessor extends DataProcessor {}'
+    rule = ''
+
+    xlsx_path = os.path.join(input_path, f'{name}.xlsx')
+    js_path = os.path.join(input_path, f'data_processor.js')
+    md_path = os.path.join(input_path, f'rule.md')
+
+    book = xlrd2.open_workbook(xlsx_path)
     title = ['label', 'prop', 'type', 'near']
 
     def read_labels():
@@ -73,6 +83,25 @@ def process(input_file, output_file):
         for idx, header in enumerate(headers):
             config[header] = get_cell_str(sheet, 1, idx)
 
+    def read_metadata():
+        sheet = book.sheet_by_name('metadata')
+        headers = sheet.row_values(0)
+        headers = {h: idx for (idx, h) in enumerate(headers)}
+        for key in metadata.keys():
+            metadata[key] = get_cell_str(sheet, 1, headers[key])
+
+    def read_rule():
+        nonlocal rule
+        if os.path.exists(md_path):
+            with open(md_path, 'r', encoding='utf-8') as f:
+                rule = f.read()
+
+    def read_data_processor():
+        nonlocal data_processor
+        if os.path.exists(js_path):
+            with open(js_path, 'r', encoding='utf-8') as f:
+                data_processor = f.read()
+
     def write_to_file():
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write('export const columns = ' + json.dumps(labels, ensure_ascii=False, indent=4) + ';\n')
@@ -83,19 +112,29 @@ def process(input_file, output_file):
                 value = config[config_]
                 f.write(f'export const {config_} = {value};\n')
 
+            f.write(f'export const rule = {repr(rule)};\n')
+
+            f.write('import DataProcessor from "../script/dataProcessor.js";\n')
+            f.write(data_processor + '\n')
+
+    read_metadata()
     read_config()
     read_labels()
     read_data()
+    read_rule()
+    read_data_processor()
     write_to_file()
+    print(metadata)
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('input_file', type=str, help='the input file of label and data')
+    parser.add_argument('input_path', type=str, help='the input path of dataset')
+    parser.add_argument('name', type=str, help='name of the dataset')
     parser.add_argument('--output_file', default='./data.js', type=str, help='the output file')
 
-    process(parser.parse_args().input_file, parser.parse_args().output_file)
+    process(parser.parse_args().input_path, parser.parse_args().name, parser.parse_args().output_file)
 
 
 if __name__ == "__main__":

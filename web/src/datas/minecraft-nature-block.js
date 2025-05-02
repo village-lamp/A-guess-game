@@ -41,8 +41,8 @@ export const columns = [
                 "海底废墟",
                 "海底神殿",
                 "废弃传送门",
-                "堡垒遗迹",
-                "掠夺者前哨站"
+                "掠夺者前哨站",
+                "主世界"
             ],
             [
                 "红树林沼泽",
@@ -84,13 +84,19 @@ export const columns = [
                 "主世界"
             ],
             [
+                "堡垒遗迹",
+                "废弃传送门",
+                "下界"
+            ],
+            [
                 "绯红森林",
                 "诡异森林",
                 "下界"
             ],
             [
                 "草甸",
-                "向日葵平原"
+                "向日葵平原",
+                "主世界"
             ],
             [
                 "裸岩山峰",
@@ -115,7 +121,9 @@ export const columns = [
             [
                 "玄武岩三角洲",
                 "下界"
-            ]
+            ],
+            "末地",
+            "不生成"
         ]
     },
     {
@@ -143,6 +151,5 @@ export const maxStep = 10;
 export const hasPic = true;
 export const placeholder = "请输入自然方块";
 export const rule = "";
-
 import DataProcessor from "../script/dataProcessor.js";
 export class MyDataProcessor extends DataProcessor {}

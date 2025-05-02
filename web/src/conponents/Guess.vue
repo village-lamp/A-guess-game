@@ -242,7 +242,8 @@ const inputValue = () => {
     overDialogVisible.value = true;
     isGameOver.value = true;
   } else {
-    if (step >= maxStep && !isInfiniteStep) {
+    console.log(isInfiniteStep)
+    if (step >= maxStep && !isInfiniteStep.value) {
       gameSuccess.value = "fail";
       overDialogVisible.value = true;
       isGameOver.value = true;
