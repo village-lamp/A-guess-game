@@ -31,6 +31,9 @@ def process(input_file, output_file):
                         near.append(temp)
                     idx += 1
                 label['near'] = near
+
+            if label['type'] == 'num_order':
+                label['pattern'] = get_cell_str(sheet, row_index, 4)
             labels.append(label)
 
     def read_data():

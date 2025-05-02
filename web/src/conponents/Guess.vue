@@ -6,7 +6,11 @@
                    :icon="ArrowLeft" @click="goBack" />
       </div>
       <div style="padding: 20px; display: flex; justify-content: center; align-items: center; margin-top: 20px;">
-        <span style="margin-right: 10px; font-size: 16px; font-weight: bold">猜测次数：{{step}} / {{maxStep}}</span>
+        <el-button :class="{'my-green-button': isInfiniteStep === true,
+                           'my-grey-button': isInfiniteStep === false}"
+                   type="primary"
+                   @click="isInfiniteStep = true; maxSteps='∞'">无限次数</el-button>
+        <span style="margin-left: 10px; margin-right: 10px; font-size: 16px; font-weight: bold">猜测次数：{{step}} / {{maxSteps}}</span>
         <el-autocomplete
             v-model="searchInput"
             :fetch-suggestions="querySearch"
@@ -14,11 +18,23 @@
             clearable
             :placeholder="placeholder"
             style="width: 300px; margin-right: 10px"
+            @keydown.enter="inputValue"
         />
         <el-button type="primary" @click="inputValue" :disabled="isGameOver">确认</el-button>
         <el-button class="my-green-button" type="primary" @click="restart">重新开始</el-button>
         <el-button class="my-red-button" type="primary" :disabled="isGameOver" @click="getAnswer">揭晓答案</el-button>
       </div>
+      <el-tooltip
+          effect="dark"
+          content="关于"
+          placement="bottom"
+      >
+        <el-button
+            circle
+            @click="showAboutDialog = true"
+            style="position: absolute; top: 10px; right: 10px; background-color: #afaeae"
+        >?</el-button>
+      </el-tooltip>
     </div>
 
   <el-dialog
@@ -50,6 +66,14 @@
       </div>
     </template>
   </el-dialog>
+
+    <el-dialog v-model="showAboutDialog" title="关于" width="1200px">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="规则说明" name="rule">
+          <div v-html="renderedRule" class="markdown-body" />
+        </el-tab-pane>
+      </el-tabs>
+    </el-dialog>
 
   <el-table
       :data="resultList"
@@ -105,6 +129,7 @@ import {ElMessage} from "element-plus";
 import router from "../../router/index.js";
 import {useRoute} from "vue-router";
 import { ArrowLeft } from "@element-plus/icons-vue"
+import {marked} from "marked";
 
 const modules = import.meta.glob("../datas/*.js")
 
@@ -115,11 +140,16 @@ let prop2label = []
 let placeholder = ""
 let hasPic = true
 
-const overDialogVisible = ref();
+const maxSteps = ref('');
+const isInfiniteStep = ref(false);
+const overDialogVisible = ref(false);
 const gameSuccess = ref();
 const isGameOver = ref();
 const searchInput = ref('');
 const resultList = ref([]);
+const showAboutDialog = ref(false);
+const activeTab = ref('rule');
+const renderedRule = ref('');
 let goal;
 let step;
 
@@ -164,6 +194,7 @@ const loadData = async () => {
     prop2label = module.prop2label;
     hasPic = module.hasPic;
     placeholder = module.placeholder;
+    renderedRule.value = marked.parse(module.rule);
     restaurants.value = mainData;
 
     start();
@@ -182,6 +213,9 @@ const start = () => {
   isGameOver.value = false;
   overDialogVisible.value = false;
   gameSuccess.value = "";
+  maxSteps.value = maxStep.toString();
+  isInfiniteStep.value = false;
+  searchInput.value = '';
 }
 
 const restructureData = (item) => {
@@ -202,6 +236,16 @@ const restructureData = (item) => {
       column_result.correct = correct;
     } else if (column.type === "key" || column.type === "pic") {
       column_result.value = item[key];
+    } else if (column.type === "num_order") {
+      const regex = new RegExp(column.pattern);
+      const target = parseInt(goal[key].match(regex)[1]);
+      const current = parseInt(item[key].match(regex)[1]);
+      const appendix = target > current ? '↑':
+          target < current ? '↓': '';
+      column_result.value = item[key] + appendix;
+      column_result.correct = target === current ? 'correct'
+          : Math.abs(target - current) <= parseInt(column.near) ? 'near'
+              : 'false';
     } else if (column.type === "num") {
       const target = parseInt(goal[key]);
       const current = parseInt(item[key]);
@@ -276,19 +320,20 @@ const insertGoal2Table = () => {
 }
 
 const inputValue = () => {
-  const item = restructureData(mainData.find(d => d.value === searchInput.value));
-  if (item) {
-    resultList.value.unshift(item);
-  } else {
-    ElMessage.error('未找到该精灵');
+  let item = mainData.find(d => d.value === searchInput.value);
+  if (!item) {
+    ElMessage.error('未找到');
+    return;
   }
+  item = restructureData(item);
+  resultList.value.unshift(item);
   step++;
   if (searchInput.value === goal.value) {
     gameSuccess.value = "success";
     overDialogVisible.value = true;
     isGameOver.value = true;
   } else {
-    if (step >= maxStep) {
+    if (step >= maxStep && !isInfiniteStep) {
       gameSuccess.value = "fail";
       overDialogVisible.value = true;
       isGameOver.value = true;
@@ -360,6 +405,16 @@ onMounted(() => {
   background-color: #228B22;
 }
 
+.my-grey-button {
+  background-color: grey;
+  color: white;
+  border: none;
+}
+
+.my-grey-button:hover {
+  background-color: #6c6c6c;
+}
+
 .my-red-button {
   background-color: #c10606;
   color: white;
@@ -380,14 +435,17 @@ onMounted(() => {
   background-color: rgba(193, 6, 6, 0.65);
 }
 
+/*noinspection ALL*/
 .row-normal {
   background-color: #f0f9eb;
 }
 
+/*noinspection ALL*/
 .row-success {
   background-color: rgba(157, 246, 157, 0.63) !important;
 }
 
+/*noinspection ALL*/
 .row-fail {
   background-color: rgba(241, 123, 123, 0.45) !important;
 }

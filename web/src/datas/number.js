@@ -11,3 +11,6 @@ export const prop2label = {"value": "数字"};
 export const maxStep = 10;
 export const hasPic = false;
 export const placeholder = "请输入1-1000的数字";
+export const rule = "这不需要规则吧（\n" +
+    "\n" +
+    "真有人玩这个题库吗？";
