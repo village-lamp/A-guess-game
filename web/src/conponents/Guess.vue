@@ -83,7 +83,7 @@
   >
     <el-table-column prop="pic_url" label="" v-if="hasPic" align="center">
       <template v-slot="scope">
-        <img :src="scope.row['pic_url'].value" style="width: 100px; height: 100px;" alt=""/>
+        <img :src="scope.row['pic_url'].value" style="width: 100px; height: 100px" alt=""/>
       </template>
     </el-table-column>
     <el-table-column
@@ -153,7 +153,7 @@ const activeTab = ref('rule');
 const renderedRule = ref('');
 let dataProcessor;
 let goal;
-let step;
+const step = ref(0);
 
 const tableRowClassName = ({ row }) => {
   if (row.correct === 'correct') {
@@ -212,7 +212,7 @@ const start = () => {
   goal = dataProcessor._selectGoal();
   console.log(goal);
   resultList.value = [];
-  step = 0;
+  step.value = 0;
   isGameOver.value = false;
   overDialogVisible.value = false;
   gameSuccess.value = "";
@@ -229,28 +229,29 @@ const insertGoal2Table = () => {
 }
 
 const inputValue = () => {
-  let item = dataProcessor.input2Labels(searchInput.value);
-  if (!item) {
-    ElMessage.error('未找到');
-    return;
-  }
-  item = dataProcessor.restructureData(item);
-  resultList.value.unshift(item);
-  step++;
-  if (searchInput.value === goal.value) {
-    gameSuccess.value = "success";
-    overDialogVisible.value = true;
-    isGameOver.value = true;
-  } else {
-    console.log(isInfiniteStep)
-    if (step >= maxStep && !isInfiniteStep.value) {
-      gameSuccess.value = "fail";
+  const input = searchInput.value;
+  searchInput.value = "";
+  dataProcessor.input2Labels(input).then((item) => {
+    if (!item) {
+      ElMessage.error('未找到');
+      return;
+    }
+    item = dataProcessor.restructureData(item);
+    resultList.value.unshift(item);
+    step.value++;
+    if (searchInput.value === goal.value) {
+      gameSuccess.value = "success";
       overDialogVisible.value = true;
       isGameOver.value = true;
-      insertGoal2Table();
+    } else {
+      if (step >= maxStep && !isInfiniteStep.value) {
+        gameSuccess.value = "fail";
+        overDialogVisible.value = true;
+        isGameOver.value = true;
+        insertGoal2Table();
+      }
     }
-  }
-  searchInput.value = "";
+  });
 };
 
 const querySearch = (queryString, cb) => {

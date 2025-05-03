@@ -26,7 +26,7 @@ export default class DataProcessor {
      * @param {string} input 玩家输入
      * @returns {Object | null} 填入表格的原始标签数据
      */
-    input2Labels(input) {
+    async input2Labels(input) {
         return this.data.find(d => d.value === input);
     }
 

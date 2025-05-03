@@ -117,6 +117,14 @@ def process(input_path, name, output_file):
             f.write('import DataProcessor from "../script/dataProcessor.js";\n')
             f.write(data_processor + '\n')
 
+    def print_metadata():
+        s = "{"
+        for key in metadata.keys():
+            s += f"{key}: '{metadata[key]}', "
+        s = s.removesuffix(", ")
+        s += "}"
+        print(s)
+
     read_metadata()
     read_config()
     read_labels()
@@ -124,7 +132,7 @@ def process(input_path, name, output_file):
     read_rule()
     read_data_processor()
     write_to_file()
-    print(metadata)
+    print_metadata()
 
 
 def main():
