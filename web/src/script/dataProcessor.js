@@ -52,7 +52,7 @@ export default class DataProcessor {
      */
     restructureData(item) {
         const result = {};
-        if (item.value === this.goal.value) {
+        if (this.isSuccess(item.value)) {
             result["correct"] = "correct";
         }
         result["pic_url"] = {"value": item.pic_url};

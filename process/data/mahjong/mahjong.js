@@ -29,7 +29,7 @@ export const prop2label = {"value": "手牌", "yaku": "役种", "jifuu": "本场
 export const maxStep = 10;
 export const hasPic = true;
 export const placeholder = "请输入手牌";
-export const rule = '';
+export const rule = '## 1 目标\n目标是一个随机生成一副14张的有役手牌，一般情况下是一个5部分组成（雀头必须在最后）的文本：\n\n```123s234s345s555z66p```\n\n每组表示一个面子或者雀头，由1-3个数字以及一个表示麻将种类的字母。\'s\'表示索，\'m\'表示万，\'p\'表示饼，\'z\'表示字牌。\n\n\'1s\'，\'2m\'，\'3p\'就分别表示一索，两万和三饼。\n\n字牌前的数字可以是1-7，分别表示东南西北白发中。\n\n特殊牌型比如七对和国士无双的目标也类似，举例如下：\n\n```\n七对：11z22z33z44z55z66z77z\n国士无双：1s1s9s1m9m1p9p1z2z3z4z5z6z7z\n```\n\n## 2 输入\n\n1. 可以输入与目标格式相同的麻将代号；\n2. 也可以输入一个**役种**，系统会自动生成一副满足该役种的手牌。\n\n## 3 标签\n\n### 3.1 手牌\n\n这个标签表示输入/生成的手牌与目标手牌之间的匹配程度。\n\n该标签会将一副牌每一组的数字和字母分开，对于正常牌型会分为10个部分，比如：\n\n```\n输入：123s234s345s555z66p\n手牌：123 s 234 s 345 s 555 z 66 p\n\n输入：11z22z33z44z55z66z77z\n手牌：11 z 22 z 33 z 44 z 55 z 66 z 77 z\n```\n\n1. 如果一个组的**数字**和**字母**都为<span style="color: green">**绿色**</span>，表示目标也有这个组；\n2. 如果一个组的**数字**为<span style="color: green">**绿色**</span>，表示目标中**有一个组**的**数字**与其相同，但是**字母不同**；\n3. 如果一个组的**字母**为<span style="color: green">**绿色**</span>，表示目标中**有一个组**的**字母**与其相同，但是**数字不同**。\n此时，如果**数字**为<span style="color: #EDD374;">**黄色**</span>，则表示虽然数字不同，但是要么都是**刻子（三个相同）** 要么都是 **顺子**。\n\n猜测与目标之间 **组** 的匹配是一对一的，目标的一个组与猜测的一个组匹配后，不会再与其它组匹配。这些规则比较抽象，举个例子：\n\n\n>目标：123s333s234p555z44z\n> \n>输入：123s123s345p555p55z\n>\n>手牌：<span style="color: green">**123**</span> <span style="color: green">**s**</span>\n> 123 <span style="color: green">**s**</span> <span style="color: #EDD374;">**345**</span> <span style="color: green">**p**</span>\n> <span style="color: green">**555**</span> p <span style="color: #EDD374;">**55**</span>\n> <span style="color: green">**z**</span>\n\n>首先由于123s在目标中有，所以是绿色 => 123s绑定123s；\n>\n>555p在目标中有一个555z，所以数字绿色 => 555p绑定555z；\n>\n>123s在目标中有333s，所以字母绿色 => 123s绑定333s；\n>\n>345p在目标中有234p，所以字母绿色，数字黄色 => 345p绑定234p；\n>\n>55z在目标中有44z，所以字母绿色，数字黄色 => 55z绑定44z；\n\n可能看完这些也不一定能完全理解规则，但是玩几轮应该就会懂了。\n\n### 3.2 役种\n\n由于这个游戏不考虑回合数，副露，宝牌等。所以与这些相关的一些役（立直，一发，宝牌，天和等）就没有加入题库。\n \n目前的所有役如下：\n\n断幺九，自风牌，场风牌，平和，一杯口，三色同刻，对对和，三暗刻，混老头，混全带幺九，一气通贯，三色同顺，两杯口，纯全带幺九，混一色\n，清一色，一色三同顺，小三元，七对子，九莲宝灯，绿一色，大四喜，小四喜，字一色，大三元，国士无双\n\n几点说明：\n+ 自风牌 场风牌：游戏开始时会随机抽取一个自风和一个场风（半庄，不公布）；\n+ 所以刻子都视作暗刻，所以只要有4个刻子就是四暗刻，因此取消了四暗刻（与对对和相同）；\n+ 当两种牌型是包含关系时（是一种牌型的一定也是另一种），只保留被包含者。比如：一杯口->两杯口\n    ，混全带幺九->混老头，清一色->九莲宝灯...';
 import DataProcessor from "../script/dataProcessor.js";
 const TilesType = Object.freeze({
     NORMAL: "normal",
@@ -41,9 +41,13 @@ export class MyDataProcessor extends DataProcessor {
     constructor(data, columns) {
         super(data, columns);
 
-        //temp
         this.bafuu = "";
         this.jifuu = "";
+        const restaurants = Object.keys(this.yakus_normal);
+        restaurants.push(...Object.keys(this.yakus_man));
+        this.restaurants = restaurants.map((r) => {
+            return {'value': r}
+        });
     }
 
     //region data
@@ -67,11 +71,11 @@ export class MyDataProcessor extends DataProcessor {
         "清一色": [this.isChinitsu, this.generateChinitsu],
         "一色三同顺": [this.isIsshoukuSanDoujun, this.generateIsshoukuSanDoujun],
         "小三元": [this.isShousangen, this.generateShousangen],
-        "七对子": [this.isChiitoi, this.generateChiitoi]
+        "七对子": [this.isChiitoi, this.generateChiitoi],
+        "对对和": [this.isToitoi, this.generateToitoi]
     };
 
     yakus_man = {
-        "四暗刻": [this.isSuuankou, this.generateSuuankou],
         "九莲宝灯": [this.isChuurenpoutou, this.generateChuurenpoutou],
         "绿一色": [this.isRyuuiisou, this.generateRyuuiisou],
         "大四喜": [this.isDaisuushii, this.generateDaisuushii],
@@ -247,6 +251,24 @@ export class MyDataProcessor extends DataProcessor {
     }
 
     async input2Labels(input) {
+         if (input[0] < '1' || input[0] > '9') {
+            let yaku = this.yakus_normal[input];
+            if (!yaku) {
+                yaku = this.yakus_man[input];
+                if (!yaku) {
+                    return null;
+                }
+            }
+            const generator = yaku[1].bind(this);
+            const pool = this.createPool();
+            const groups = generator(pool);
+
+            const input_ = this.group_tiles(groups);
+            return this.groups2item(input_, groups, (groups[0].length === 1) ?
+                TilesType.KOKUSHI : (groups[0].length === 2) ? TilesType.CHIITOI :
+                    TilesType.NORMAL);
+        }
+
         const regex = /([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{2}[spmz])/;
         const regex_chitui = /([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])/;
         const regex_goshi = /(?:1s|9s|1p|9p|1m|9m|[1-7]z){14}/;
@@ -1026,12 +1048,12 @@ export class MyDataProcessor extends DataProcessor {
         return groups;
     }
 
-    isSuuankou(groups) {
+    isToitoi(groups) {
         const koutsu = this.getAllKoutsu(groups);
-        return koutsu.length === 4 && !this.isHonroutou(groups) && !this.isDaisuushii(groups);
+        return koutsu.length === 4 && !this.isHonroutou(groups);
     }
 
-    generateSuuankou(pool) {
+    generateToitoi(pool) {
         const groups = [];
         for (let i = 1; i <= 4; ++i) {
             groups.push(this.generateRandomKoutsu(pool));
@@ -1201,11 +1223,6 @@ export class MyDataProcessor extends DataProcessor {
         });
     }
 
-    autoComplete(input) {
-        return [{'value': '111z222s333m444p55z'}, {'value': '11s22s33s44s55s66s77s'},
-            {'value': '1s9s1p9p1m9m1z2z3z4z5z6z7z7z'}];
-    }
-
     loadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -1216,3 +1233,4 @@ export class MyDataProcessor extends DataProcessor {
         });
     }
 }
+

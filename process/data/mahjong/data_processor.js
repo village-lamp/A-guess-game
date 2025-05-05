@@ -8,9 +8,13 @@ export class MyDataProcessor extends DataProcessor {
     constructor(data, columns) {
         super(data, columns);
 
-        //temp
         this.bafuu = "";
         this.jifuu = "";
+        const restaurants = Object.keys(this.yakus_normal);
+        restaurants.push(...Object.keys(this.yakus_man));
+        this.restaurants = restaurants.map((r) => {
+            return {'value': r}
+        });
     }
 
     //region data
@@ -34,11 +38,11 @@ export class MyDataProcessor extends DataProcessor {
         "清一色": [this.isChinitsu, this.generateChinitsu],
         "一色三同顺": [this.isIsshoukuSanDoujun, this.generateIsshoukuSanDoujun],
         "小三元": [this.isShousangen, this.generateShousangen],
-        "七对子": [this.isChiitoi, this.generateChiitoi]
+        "七对子": [this.isChiitoi, this.generateChiitoi],
+        "对对和": [this.isToitoi, this.generateToitoi]
     };
 
     yakus_man = {
-        "四暗刻": [this.isSuuankou, this.generateSuuankou],
         "九莲宝灯": [this.isChuurenpoutou, this.generateChuurenpoutou],
         "绿一色": [this.isRyuuiisou, this.generateRyuuiisou],
         "大四喜": [this.isDaisuushii, this.generateDaisuushii],
@@ -214,6 +218,24 @@ export class MyDataProcessor extends DataProcessor {
     }
 
     async input2Labels(input) {
+         if (input[0] < '1' || input[0] > '9') {
+            let yaku = this.yakus_normal[input];
+            if (!yaku) {
+                yaku = this.yakus_man[input];
+                if (!yaku) {
+                    return null;
+                }
+            }
+            const generator = yaku[1].bind(this);
+            const pool = this.createPool();
+            const groups = generator(pool);
+
+            const input_ = this.group_tiles(groups);
+            return this.groups2item(input_, groups, (groups[0].length === 1) ?
+                TilesType.KOKUSHI : (groups[0].length === 2) ? TilesType.CHIITOI :
+                    TilesType.NORMAL);
+        }
+
         const regex = /([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{3}[spmz])([1-9]{2}[spmz])/;
         const regex_chitui = /([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])([1-9]{2}[spmz])/;
         const regex_goshi = /(?:1s|9s|1p|9p|1m|9m|[1-7]z){14}/;
@@ -993,12 +1015,12 @@ export class MyDataProcessor extends DataProcessor {
         return groups;
     }
 
-    isSuuankou(groups) {
+    isToitoi(groups) {
         const koutsu = this.getAllKoutsu(groups);
-        return koutsu.length === 4 && !this.isHonroutou(groups) && !this.isDaisuushii(groups);
+        return koutsu.length === 4 && !this.isHonroutou(groups);
     }
 
-    generateSuuankou(pool) {
+    generateToitoi(pool) {
         const groups = [];
         for (let i = 1; i <= 4; ++i) {
             groups.push(this.generateRandomKoutsu(pool));
@@ -1166,11 +1188,6 @@ export class MyDataProcessor extends DataProcessor {
             });
             return canvas.toDataURL('image/png');
         });
-    }
-
-    autoComplete(input) {
-        return [{'value': '111z222s333m444p55z'}, {'value': '11s22s33s44s55s66s77s'},
-            {'value': '1s9s1p9p1m9m1z2z3z4z5z6z7z7z'}];
     }
 
     loadImage(src) {
