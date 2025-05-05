@@ -81,6 +81,7 @@ export class MyDataProcessor extends DataProcessor {
             const column_result = result[key];
             if (column.type === "mahjong") {
                 const input = item[key];
+                // const input = '222m333m777m888m33s';
                 const regex = /[1-9]+[spmz]/g;
                 const item_groups = input.match(regex);
                 const result_value = [];
@@ -91,6 +92,7 @@ export class MyDataProcessor extends DataProcessor {
 
                 const correct = Array(item_groups.length * 2).fill('false');
                 const goal_groups = this.goal[key].match(regex);
+                // const goal_groups = "444s456p333s888m66s".match(regex);
                 const judge_correct = (judge) => {
                     for (let i = 0; i < item_groups.length; ++i) {
                         if (correct[i * 2] !== 'false' || correct[i * 2 + 1] !== 'false') {
