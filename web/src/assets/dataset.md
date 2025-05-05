@@ -60,8 +60,11 @@ config工作表为配置工作表，第一列填写各属性名称，第二列�
 目前可以自定义的内容也较为有限：
 + 目标生成：selectGoal函数
 + 标签判断：input2Labels和restructureData函数
-+ 自动补全：autoComplete函数
++ 自动补全：autoComplete函数以及restaurants属性
++ 判断获胜：isSuccess函数
 
-具体内容见[github仓库](https://github.com/village-lamp/A-guess-game/blob/master/web/src/script/dataProcessor.js)
+具体内容见[github仓库](https://github.com/village-lamp/A-guess-game/blob/master/web/src/script/dataProcessor.js)。
 
-在样例中，[数字炸弹](https://github.com/village-lamp/A-guess-game/blob/master/process/data/number/number.xlsx)就是一个进阶题库。
+在样例中，[数字炸弹](https://github.com/village-lamp/A-guess-game/blob/master/process/data/number/)就是一个比较简单的进阶题库。
+
+[日麻](https://github.com/village-lamp/A-guess-game/blob/master/process/data/mahjong/)也是一个进阶题库，但是比较复杂。

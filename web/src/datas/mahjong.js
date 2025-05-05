@@ -72,7 +72,10 @@ export class MyDataProcessor extends DataProcessor {
         "一色三同顺": [this.isIsshoukuSanDoujun, this.generateIsshoukuSanDoujun],
         "小三元": [this.isShousangen, this.generateShousangen],
         "七对子": [this.isChiitoi, this.generateChiitoi],
-        "对对和": [this.isToitoi, this.generateToitoi]
+        "对对和": [this.isToitoi, this.generateToitoi],
+        "役牌：白": [this.isSangen5z, this.generateSangen5z],
+        "役牌：发": [this.isSangen6z, this.generateSangen6z],
+        "役牌：中": [this.isSangen7z, this.generateSangen7z],
     };
 
     yakus_man = {
@@ -82,7 +85,7 @@ export class MyDataProcessor extends DataProcessor {
         "小四喜": [this.isShousuushii, this.generateShousuushii],
         "字一色": [this.isTsuiisou, this.generateTsuiisou],
         "大三元": [this.isDaisangen, this.generateDaisangen],
-        "国士无双": [this.isKokushi, this.generateKokushi]
+        "国士无双": [this.isKokushi, this.generateKokushi],
     }
     //endregion
 
@@ -722,6 +725,42 @@ export class MyDataProcessor extends DataProcessor {
         return false;
     }
 
+    isSangen(groups, tile) {
+        const koutsu = this.getAllKoutsu(groups);
+        return koutsu.includes(tile) && !this.isShousangen(groups);
+    }
+
+    generateSangen(pool, tile) {
+        const groups = [Array(3).fill(tile)];
+        this.decreasePool(pool, ...groups);
+        this.generateRest(pool, groups);
+        return groups;
+    }
+
+    isSangen5z(groups) {
+        return this.isSangen(groups, '5z');
+    }
+
+    generateSangen5z(pool) {
+        return this.generateSangen(pool, '5z');
+    }
+
+    isSangen6z(groups) {
+        return this.isSangen(groups, '6z');
+    }
+
+    generateSangen6z(pool) {
+        return this.generateSangen(pool, '6z');
+    }
+
+    isSangen7z(groups) {
+        return this.isSangen(groups, '7z');
+    }
+
+    generateSangen7z(pool) {
+        return this.generateSangen(pool, '7z');
+    }
+
     generateBaFuu(pool) {
         const groups = [];
         const group = Array(3).fill(this.bafuu);
@@ -788,7 +827,7 @@ export class MyDataProcessor extends DataProcessor {
 
     isSanankou(groups) {
         const koutsu = this.getAllKoutsu(groups);
-        return koutsu.length === 3 && !this.isSanshokuDoukou(groups);
+        return koutsu.length === 3 && !this.isSanshokuDoukou(groups) && !this.isShousangen(groups);
     }
 
     generateSanankou(pool) {
@@ -1233,4 +1272,3 @@ export class MyDataProcessor extends DataProcessor {
         });
     }
 }
-
