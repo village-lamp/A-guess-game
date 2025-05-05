@@ -58,8 +58,8 @@ export class MyDataProcessor extends DataProcessor {
 
     isSuccess(input) {
         const regex = /[1-9]+[spmz]/g;
-        const item_groups = input.match(regex);
-        const goal_groups = this.goal.value.match(regex);
+        const item_groups = input.match(regex) || [];
+        const goal_groups = this.goal.value.match(regex) || [];
         let ret = true;
         item_groups.forEach((item_group) => {
             if (!goal_groups.includes(item_group)) {
@@ -135,9 +135,9 @@ export class MyDataProcessor extends DataProcessor {
                                 const isGoalShuntsu = goal_group[0] !== goal_group[1];
                                 correct[i * 2] = isItemShuntsu ^ isGoalShuntsu ? 'false' : 'near';
                             }
+                            correct[i * 2 + 1] = 'correct';
+                            return true;
                         }
-                        correct[i * 2 + 1] = 'correct';
-                        return true;
                     }
                     return false;
                 })
