@@ -19,7 +19,11 @@
             :placeholder="placeholder"
             style="width: 300px; margin-right: 10px"
             @keydown.enter="inputValue"
-        />
+        >
+          <template #default="{ item }">
+            <div v-html="item.highlightedLabel"></div>
+          </template>
+        </el-autocomplete>
         <el-button type="primary" @click="inputValue" :disabled="isGameOver">确认</el-button>
         <el-button class="my-green-button" type="primary" @click="restart">重新开始</el-button>
         <el-button class="my-red-button" type="primary" :disabled="isGameOver" @click="getAnswer">揭晓答案</el-button>
@@ -125,7 +129,7 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue';
+import {ref, onMounted, h} from 'vue';
 import {ElMessage} from "element-plus";
 import router from "../../router/index.js";
 import {useRoute} from "vue-router";
@@ -208,19 +212,20 @@ const loadData = async () => {
 
 const start = () => {
   console.log("开始游戏")
-  console.log(dataProcessor)
-  goal = dataProcessor._selectGoal();
-  console.log(goal);
-  resultList.value = [];
-  step.value = 0;
-  isGameOver.value = false;
-  overDialogVisible.value = false;
-  gameSuccess.value = "";
-  maxSteps.value = maxStep.toString();
-  isInfiniteStep.value = false;
-  searchInput.value = '';
+  isGameOver.value = true;
+  dataProcessor._selectGoal().then((g) => {
+    goal = g;
+    console.log(g);
+    resultList.value = [];
+    step.value = 0;
+    isGameOver.value = false;
+    overDialogVisible.value = false;
+    gameSuccess.value = "";
+    maxSteps.value = maxStep.toString();
+    isInfiniteStep.value = false;
+    searchInput.value = '';
+  });
 }
-
 
 const insertGoal2Table = () => {
   const item = dataProcessor.restructureData(goal);
@@ -239,7 +244,7 @@ const inputValue = () => {
     item = dataProcessor.restructureData(item);
     resultList.value.unshift(item);
     step.value++;
-    if (searchInput.value === goal.value) {
+    if (dataProcessor.isSuccess(input)) {
       gameSuccess.value = "success";
       overDialogVisible.value = true;
       isGameOver.value = true;
@@ -254,9 +259,31 @@ const inputValue = () => {
   });
 };
 
+const CustomItem = {
+  props: ['item'],
+  render() {
+    return h('div', {
+      innerHTML: this.item.highlightedLabel
+    })
+  }
+}
+
 const querySearch = (queryString, cb) => {
-  cb(dataProcessor.autoComplete(queryString));
+  cb(dataProcessor.autoComplete(queryString)
+      .map((item) => ({
+        value: item.value,
+        highlightedLabel: highlightMatch(item.value, queryString)
+      })));
 };
+
+const highlightMatch = (text, query) => {
+  if (!query) {
+    return text;
+  }
+  const escaped = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  return text.replace(regex, '<span style="color: #fd7979;">$1</span>');
+}
 
 onMounted(() => {
   loadData();

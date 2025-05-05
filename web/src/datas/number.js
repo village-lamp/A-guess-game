@@ -14,11 +14,11 @@ export const placeholder = "请输入1-1000的数字";
 export const rule = '这不需要规则吧（\n\n真有人玩这个题库吗？';
 import DataProcessor from "../script/dataProcessor.js";
 export class MyDataProcessor extends DataProcessor {
-    selectGoal() {
+    async selectGoal() {
         return {"value": (Math.floor(Math.random() * 1000) + 1).toString()};
     }
 
-    input2Labels(input) {
+    async input2Labels(input) {
         const regex = /\d+/;
         if (regex.test(input)) {
             const num = parseInt(input);

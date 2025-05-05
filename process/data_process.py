@@ -45,14 +45,12 @@ def process(input_path, name, output_file):
             if label['type'] == 'num_order':
                 label['pattern'] = get_cell_str(sheet, row_index, 4)
             labels.append(label)
+            prop2label[label['prop']] = label['label']
 
     def read_data():
-        nonlocal prop2label
         sheet = book.sheet_by_name('data')
 
         headers = sheet.row_values(0)
-        prop2label = sheet.row_values(1)
-        prop2label = {prop: name for (prop, name) in zip(headers, prop2label)}
         headers = {header: idx for idx, header in enumerate(headers)}
 
         for row_index in range(2, sheet.nrows):
@@ -63,6 +61,8 @@ def process(input_path, name, output_file):
                 labels_ = []
             labels_.extend(labels)
             for label in labels_:
+                if label['prop'] not in headers:
+                    continue
                 idx = headers[label['prop']]
                 if label['type'].find('list') != -1:
                     value = get_cell_str(sheet, row_index, idx)

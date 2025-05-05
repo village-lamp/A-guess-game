@@ -2,22 +2,34 @@ export default class DataProcessor {
     constructor(data, columns) {
         this.data = data;
         this.columns = columns;
+        this.restaurants = data;
+    }
+
+    /**
+     * 判断输入是否正确
+     * @param {string} input 用户输入
+     * @returns {boolean} 是否正确
+     */
+    isSuccess(input) {
+        return input === this.goal.value;
     }
 
     /**
      * 选择猜测目标，将目标赋值给this.goal
      * @returns {dictionary} 猜测的目标
      */
-    _selectGoal() {
-        this.goal = this.selectGoal()
-        return this.goal;
+    async _selectGoal() {
+        return this.selectGoal().then((goal) => {
+            this.goal = goal;
+            return this.goal;
+        })
     }
 
     /**
      * 选择猜测目标
      * @returns {Object} 猜测的目标，格式为{"标签"：值}，玩家用于猜测的标签名为"value"
      */
-    selectGoal() {
+    async selectGoal() {
         return this.data[Math.floor(Math.random() * this.data.length)];
     }
 
@@ -54,8 +66,6 @@ export default class DataProcessor {
                     correct.push(this.goal[key].includes(i) ? 'correct' : 'false');
                 }
                 column_result.correct = correct;
-            } else if (column.type === "key" || column.type === "pic") {
-                column_result.value = item[key];
             } else if (column.type === "num_order") {
                 const regex = new RegExp(column.pattern);
                 const target = parseInt(this.goal[key].match(regex)[1]);
@@ -98,6 +108,8 @@ export default class DataProcessor {
                     correct.push(cur_correct);
                 }
                 column_result.correct = correct;
+            } else {
+                column_result.value = item[key];
             }
 
             if (column.type.includes('list')) {
@@ -157,7 +169,7 @@ export default class DataProcessor {
      * @returns {Array} 自动补全列表
      */
     autoComplete(input) {
-        return this.data.filter(this.createAutoCompleteFilter(input))
+        return this.restaurants.filter(this.createAutoCompleteFilter(input))
                 .sort((a, b) => {
                     const indexA = a.value.toLowerCase().indexOf(input.toLowerCase());
                     const indexB = b.value.toLowerCase().indexOf(input.toLowerCase());

@@ -1,9 +1,9 @@
 export class MyDataProcessor extends DataProcessor {
-    selectGoal() {
+    async selectGoal() {
         return {"value": (Math.floor(Math.random() * 1000) + 1).toString()};
     }
 
-    input2Labels(input) {
+    async input2Labels(input) {
         const regex = /\d+/;
         if (regex.test(input)) {
             const num = parseInt(input);
